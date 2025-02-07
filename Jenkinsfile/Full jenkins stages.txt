@@ -15,12 +15,12 @@ pipeline{
         }
         stage('Checkout from Git'){
             steps{
-                git branch: 'main', url: 'https://github.com/Aseemakram19/bingo1.git'
+                git branch: 'main', url: 'https://github.com/Kingslekez/bingo1.git'
             }
         }
         stage("Sonarqube Analysis "){
             steps{
-                withSonarQubeEnv('sonar-server') {
+                withSonarQubeEnv('SonarQube-Server') {
                     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Bingo \
                     -Dsonar.projectKey=Bingo '''
                 }
@@ -29,7 +29,7 @@ pipeline{
         stage("quality gate"){
            steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
+                    waitForQualityGate abortPipeline: false, credentialsId: 'SonarQube-Token' 
                 }
             } 
         }
@@ -40,7 +40,7 @@ pipeline{
         }
         stage('OWASP FS SCAN') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP'
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
@@ -52,22 +52,22 @@ pipeline{
         stage("Docker Build & Push"){
             steps{
                 script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                   withDockerRegistry(credentialsId: 'dockerhub', toolName: 'docker'){   
                        sh "docker build -t bingo ."
-                       sh "docker tag bingo aseemakram19/bingo:latest "
-                       sh "docker push aseemakram19/bingo:latest "
+                       sh "docker tag bingo kingslekez/bingo:latest "
+                       sh "docker push kingslekez/bingo:latest "
                     }
                 }
             }
         }
         stage("TRIVY"){
             steps{
-                sh "trivy image aseemakram19/bingo:latest > trivyimage.txt" 
+                sh "trivy image kingslekez/bingo:latest > trivyimage.txt" 
             }
         }
         stage('Deploy to container'){
             steps{
-                sh 'docker run -d --name bingo -p 3000:3000 aseemakram19/bingo:latest'
+                sh 'docker run -d --name bingo -p 3000:3000 kingslekez/bingo:latest'
             }
         }
 
